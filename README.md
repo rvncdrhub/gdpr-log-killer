@@ -1,87 +1,91 @@
-# GDPR Log Killer
+# Wazuh Rule Tracker
 
-Strip personally identifiable information (PII) and internal infrastructure identifiers from log files before sharing them with public AI tools.
+Maintain a version history of your Wazuh rule files and automatically document every delta between versions — which rules were added, removed, or modified, and exactly which fields changed.
 
-## What it removes
+## What it tracks
 
-| Category | Examples |
+| Change | What you see |
 |---|---|
-| IPv4 / IPv6 | `192.168.1.42`, `2001:db8::1` |
-| Hostnames | `dc01.corp.acme.com` (configure your domains) |
-| Usernames | `user=jsmith`, `CORP\jsmith`, `logged in as alice` |
-| Email addresses | `alice@company.com` |
-| MAC addresses | `00:1A:2B:3C:4D:5E` |
-| Auth tokens | `Authorization: Bearer <token>` |
-| URL credentials | `https://admin:secret@host/` |
-| Phone numbers | `+1 (555) 867-5309` |
-| UUIDs / Session IDs | opt-in |
-
-Values are replaced with stable numbered placeholders like `[IPV4_1]`, `[USER_2]`, so correlations in the log are preserved for AI analysis.
+| New rule added | Full rule with all fields highlighted green |
+| Rule removed | Full rule highlighted red |
+| Level changed | `level: 5 → 7` |
+| Match / regex changed | Before / after side-by-side |
+| Description changed | Before / after side-by-side |
+| Attribute added/removed | e.g. `@noalert: 1 → (removed)` |
+| Any child element changed | `frequency`, `timeframe`, `if_sid`, `group`, `mitre`, … |
 
 ---
 
 ## Quick start
 
-### Web interface
-
 ```bash
 pip install -r requirements.txt
 python web/app.py
-# Open http://localhost:5000
+# Open http://localhost:5001
 ```
 
-### CLI
+1. Paste your current rule file XML and click **Save Version** — this becomes the baseline.
+2. Paste the next version of the file whenever it changes.
+3. The tracker automatically diffs against the previous version and shows the structured change log.
 
-```bash
-pip install -e .
+---
 
-# Sanitize a file
-gdpr-log-killer app.log > clean.log
+## Web interface
 
-# Add internal domain stripping
-gdpr-log-killer -d corp.acme.com -d internal app.log > clean.log
-
-# Pipe from stdin
-journalctl -n 500 | gdpr-log-killer -d corp.acme.com --stdin
-
-# Print a replacement summary to stderr
-gdpr-log-killer --report app.log > clean.log
-
-# Also show original→placeholder mapping
-gdpr-log-killer --report --show-mapping app.log > clean.log
-```
-
-### CLI flags
-
-| Flag | Default | Description |
-|---|---|---|
-| `-d / --domain` | *(none)* | Internal domain suffix (repeatable) |
-| `--no-ips` | off | Skip IP scrubbing |
-| `--no-emails` | off | Skip email scrubbing |
-| `--no-macs` | off | Skip MAC scrubbing |
-| `--no-users` | off | Skip username scrubbing |
-| `--no-phones` | off | Skip phone scrubbing |
-| `--strip-uuids` | off | Also replace UUIDs |
-| `--report` | off | JSON summary to stderr |
-| `--show-mapping` | off | Include placeholder↔original map |
+- **Version history** sidebar — click any version to view its diff
+- **Compare any two versions** — use the "Compare two versions…" button in the header
+- **View raw XML** — opens the stored XML in a new tab
+- **Delete versions** — hover a version and click ✕
 
 ---
 
 ## Python API
 
 ```python
-from gdpr_log_killer import Sanitizer
+from wazuh_rule_tracker.parser import parse_rule_file
+from wazuh_rule_tracker.diff import diff_rule_sets
 
-s = Sanitizer(
-    internal_domains=["corp.acme.com", "internal"],
-    strip_uuids=True,
-)
+v1_rules = parse_rule_file(open("local_rules_v1.xml").read())
+v2_rules = parse_rule_file(open("local_rules_v2.xml").read())
 
-result = s.sanitize(log_text)
-print(result.text)   # sanitized log
-print(result.stats)  # {"IPV4": 3, "USER": 2, ...}
-print(result.mapping)  # {"[IPV4_1]": "10.0.0.55", ...}
+result = diff_rule_sets(v1_rules, v2_rules)
+print(result.summary())
+# {"added": 1, "removed": 1, "modified": 3, "total": 5}
+
+for change in result.modified:
+    print(f"Rule {change.rule_id}:")
+    for fc in change.field_changes:
+        print(f"  {fc.field}: {fc.old_value!r} → {fc.new_value!r}")
 ```
+
+---
+
+## REST API
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/versions` | List all versions with diff summaries |
+| `POST` | `/api/versions` | Add a new version |
+| `GET` | `/api/versions/<id>/raw` | Download raw XML for a version |
+| `GET` | `/api/diff/<from_id>/<to_id>` | Structured diff between any two versions |
+| `DELETE` | `/api/versions/<id>` | Remove a version |
+
+**POST /api/versions** body:
+```json
+{
+  "xml":   "<group name=\"...\">…</group>",
+  "label": "Post-incident update",
+  "notes": "Added detection for CVE-2024-1234"
+}
+```
+
+---
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `WAZUH_TRACKER_DB` | `wazuh_tracker.db` | Path to the SQLite database file |
 
 ---
 
@@ -90,46 +94,5 @@ print(result.mapping)  # {"[IPV4_1]": "10.0.0.55", ...}
 ```bash
 pip install -e ".[dev]"
 pytest
-pytest --cov=gdpr_log_killer
+pytest --cov=wazuh_rule_tracker
 ```
-
----
-
-## REST API
-
-`POST /api/sanitize`
-
-```json
-{
-  "text": "<raw log text>",
-  "options": {
-    "strip_ips": true,
-    "strip_emails": true,
-    "strip_macs": true,
-    "strip_hostnames": true,
-    "strip_users": true,
-    "strip_uuids": false,
-    "strip_auth_tokens": true,
-    "strip_url_creds": true,
-    "strip_phones": true,
-    "domains": "corp.acme.com\ninternal"
-  }
-}
-```
-
-Response:
-
-```json
-{
-  "sanitized": "...",
-  "stats": { "IPV4": 3, "USER": 2 },
-  "total": 5
-}
-```
-
----
-
-## Security note
-
-This tool processes log data server-side in your own environment.  
-**No data is ever sent to any third party.**

@@ -3,149 +3,132 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GDPR Log Killer</title>
+  <title>Wazuh Rule Tracker</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header>
     <div class="header-inner">
-      <span class="logo">&#x1F6AB; GDPR Log Killer</span>
-      <span class="tagline">Strip sensitive data from logs before sharing with AI</span>
+      <span class="logo">&#x1F6E1;&#xFE0F; Wazuh Rule Tracker</span>
+      <span class="tagline">Document and audit every change to your Wazuh rule files</span>
+      <div class="header-actions">
+        <button class="btn-ghost" id="btnCompare">Compare two versions&hellip;</button>
+      </div>
     </div>
   </header>
 
-  <main>
-    <!-- ── Options panel ─────────────────────────────────────── -->
-    <section class="options-panel" id="optionsPanel">
-      <h2>Options</h2>
-
-      <div class="option-group">
-        <label class="toggle">
-          <input type="checkbox" id="opt_ips" checked />
-          <span class="slider"></span>
-          IP Addresses
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="opt_emails" checked />
-          <span class="slider"></span>
-          Email Addresses
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="opt_macs" checked />
-          <span class="slider"></span>
-          MAC Addresses
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="opt_users" checked />
-          <span class="slider"></span>
-          Usernames
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="opt_phones" checked />
-          <span class="slider"></span>
-          Phone Numbers
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="opt_auth" checked />
-          <span class="slider"></span>
-          Auth Tokens
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="opt_url_creds" checked />
-          <span class="slider"></span>
-          URL Credentials
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="opt_uuids" />
-          <span class="slider"></span>
-          UUIDs / Session IDs
-        </label>
+  <div class="layout">
+    <!-- ── Left: version history ──────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Version History</span>
+        <button class="btn-ghost btn-sm" id="btnAddVersion" title="Add new version">+ New</button>
       </div>
-
-      <div class="option-group domains-group">
-        <label for="opt_domains">
-          Internal Domain Suffixes
-          <span class="hint">(one per line, or comma-separated)</span>
-        </label>
-        <textarea
-          id="opt_domains"
-          placeholder="corp.example.com&#10;internal.acme.org"
-          rows="3"
-        ></textarea>
-        <p class="hint">
-          Hostnames ending in these suffixes will be replaced. Leave empty to
-          skip hostname scrubbing.
-        </p>
+      <div id="versionList" class="version-list">
+        <div class="empty-state small">No versions yet.</div>
       </div>
+    </aside>
 
-      <div class="option-group">
-        <label class="toggle">
-          <input type="checkbox" id="opt_hostnames" checked />
-          <span class="slider"></span>
-          Internal Hostnames
-        </label>
-      </div>
-    </section>
+    <!-- ── Right: main content ────────────────────────────────── -->
+    <main class="main-panel" id="mainPanel">
 
-    <!-- ── Editor area ───────────────────────────────────────── -->
-    <section class="editor-area">
-      <div class="pane" id="inputPane">
-        <div class="pane-header">
-          <span class="pane-title">Raw Log</span>
-          <div class="pane-actions">
-            <button class="btn-ghost" id="btnPaste" title="Paste from clipboard">Paste</button>
-            <button class="btn-ghost" id="btnClearInput" title="Clear input">Clear</button>
+      <!-- Upload form (default view) -->
+      <section class="upload-form" id="uploadForm">
+        <h2 id="uploadTitle">Add Rule File Version</h2>
+        <p class="upload-hint" id="uploadHint">Paste your Wazuh rule XML below. The first paste becomes the baseline; subsequent versions are automatically diffed against the previous one.</p>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="inputLabel">Label <span class="muted">(optional)</span></label>
+            <input type="text" id="inputLabel" placeholder="e.g. Post-incident update, Pre-audit snapshot" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="inputNotes">Notes <span class="muted">(optional)</span></label>
+            <input type="text" id="inputNotes" placeholder="e.g. Added detection for CVE-2024-1234" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="xml-area-wrapper">
+          <label for="inputXml">Rule file XML</label>
+          <div class="xml-toolbar">
+            <button class="btn-ghost btn-sm" id="btnPasteXml">Paste</button>
+            <button class="btn-ghost btn-sm" id="btnClearXml">Clear</button>
           </div>
         </div>
         <textarea
-          id="inputText"
-          class="log-textarea"
-          placeholder="Paste your log here…"
+          id="inputXml"
+          class="xml-textarea"
+          placeholder="&lt;group name=&quot;my_rules,&quot;&gt;&#10;  &lt;rule id=&quot;100001&quot; level=&quot;5&quot;&gt;&#10;    &lt;match&gt;error&lt;/match&gt;&#10;    &lt;description&gt;Generic error&lt;/description&gt;&#10;  &lt;/rule&gt;&#10;&lt;/group&gt;"
           spellcheck="false"
         ></textarea>
-        <div class="pane-footer">
-          <span class="char-count" id="inputCount">0 chars</span>
-          <button class="btn-primary" id="btnSanitize">
-            Sanitize &#x2192;
-          </button>
-        </div>
-      </div>
 
-      <div class="pane" id="outputPane">
-        <div class="pane-header">
-          <span class="pane-title">Sanitized Output</span>
-          <div class="pane-actions">
-            <button class="btn-ghost" id="btnCopy" title="Copy to clipboard" disabled>Copy</button>
-            <button class="btn-ghost" id="btnDownload" title="Download as .txt" disabled>Download</button>
+        <div class="form-footer">
+          <span class="char-count" id="xmlCount">0 chars</span>
+          <button class="btn-primary" id="btnSubmit">Save Version</button>
+        </div>
+        <div id="uploadError" class="error-msg" hidden></div>
+      </section>
+
+      <!-- Diff view (shown when a version is selected) -->
+      <section class="diff-view" id="diffView" hidden>
+        <div class="diff-header">
+          <div class="diff-title-row">
+            <div class="diff-versions">
+              <span class="diff-from" id="diffFromLabel"></span>
+              <span class="diff-arrow">&#x2192;</span>
+              <span class="diff-to" id="diffToLabel"></span>
+            </div>
+            <div class="diff-actions">
+              <button class="btn-ghost btn-sm" id="btnViewRaw">View raw XML</button>
+              <button class="btn-ghost btn-sm" id="btnBackToUpload">+ New version</button>
+            </div>
           </div>
+          <div class="diff-summary-badges" id="diffSummaryBadges"></div>
         </div>
-        <textarea
-          id="outputText"
-          class="log-textarea"
-          placeholder="Sanitized log will appear here…"
-          readonly
-          spellcheck="false"
-        ></textarea>
-        <div class="pane-footer">
-          <span class="char-count" id="outputCount">0 chars</span>
-          <span id="statsBar" class="stats-bar"></span>
+        <div id="diffContent" class="diff-content"></div>
+      </section>
+
+      <!-- Baseline view (first version, no prior to diff against) -->
+      <section class="baseline-view" id="baselineView" hidden>
+        <div class="diff-header">
+          <div class="diff-title-row">
+            <span class="baseline-label">&#x1F4CC; Baseline &mdash; <span id="baselineVersionLabel"></span></span>
+            <div class="diff-actions">
+              <button class="btn-ghost btn-sm" id="btnBaselineRaw">View raw XML</button>
+              <button class="btn-ghost btn-sm" id="btnBaselineNewVersion">+ New version</button>
+            </div>
+          </div>
+          <div class="baseline-meta" id="baselineMeta"></div>
+        </div>
+        <div id="baselineContent" class="diff-content"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Compare modal -->
+  <div class="modal-overlay" id="compareModal" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Compare Two Versions</span>
+        <button class="modal-close" id="btnModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="compare-row">
+          <label>From version</label>
+          <select id="compareFrom"></select>
+        </div>
+        <div class="compare-row">
+          <label>To version</label>
+          <select id="compareTo"></select>
         </div>
       </div>
-    </section>
-
-    <!-- ── Stats panel ───────────────────────────────────────── -->
-    <section class="stats-panel" id="statsPanel" hidden>
-      <h2>What was replaced</h2>
-      <div id="statsGrid" class="stats-grid"></div>
-    </section>
-  </main>
-
-  <footer>
-    <p>
-      All processing happens <strong>locally on this server</strong> — no log
-      data is forwarded to any third party.
-    </p>
-  </footer>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="btnModalCancel">Cancel</button>
+        <button class="btn-primary" id="btnModalCompare">Compare</button>
+      </div>
+    </div>
+  </div>
 
   <div id="toast" class="toast" hidden></div>
 
