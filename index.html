@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>wallet.dat Address Explorer — runs 100% in your browser</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>wallet.dat Address Explorer</h1>
+    <p class="tagline">Extracts public addresses from a Bitcoin Core <code>wallet.dat</code> and shows which ones hold a balance.</p>
+  </header>
+
+  <section class="privacy" aria-label="privacy notice">
+    <strong>🔒 Your file never leaves this page.</strong>
+    Parsing happens entirely in your browser using your CPU. Nothing is uploaded to any server.
+    The <em>only</em> data that goes out is the list of <em>public addresses</em> (not keys), sent to a
+    public block explorer to look up balances. You can disconnect from the internet, load the file, then
+    reconnect before looking up balances if you want to verify this.
+  </section>
+
+  <main>
+    <div id="drop" class="dropzone" tabindex="0">
+      <p><strong>Drop your wallet.dat here</strong> or click to choose a file</p>
+      <input type="file" id="file" hidden />
+    </div>
+
+    <div class="options">
+      <label><input type="checkbox" id="onlyWithBalance" checked /> Only show addresses with a balance</label>
+      <label>Explorer:
+        <select id="explorer">
+          <option value="mempool">mempool.space</option>
+          <option value="blockstream">blockstream.info</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="status" class="status" hidden></div>
+
+    <div id="summary" class="summary" hidden></div>
+
+    <table id="results" hidden>
+      <thead>
+        <tr><th>Address</th><th>Type</th><th class="num">Balance (BTC)</th><th class="num">Txs</th><th>Explorer</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </main>
+
+  <footer>
+    <p>
+      A <code>wallet.dat</code> contains private keys. This tool only reads and derives <em>public</em>
+      addresses from it — it never displays, transmits, or stores keys. Source is plain static files; read it.
+    </p>
+  </footer>
+
+  <script src="js/ripemd160.js"></script>
+  <script src="js/base58.js"></script>
+  <script src="js/bech32.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
