@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gdpr-log-killer"
+name = "wazuh-rule-tracker"
 version = "0.1.0"
-description = "Strip GDPR-sensitive values from log files before sharing with AI tools"
+description = "Track and audit changes to Wazuh rule files over time"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -19,12 +19,9 @@ dev = [
     "pytest-cov",
 ]
 
-[project.scripts]
-gdpr-log-killer = "gdpr_log_killer.cli:main"
-
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["gdpr_log_killer*"]
+include = ["wazuh_rule_tracker*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

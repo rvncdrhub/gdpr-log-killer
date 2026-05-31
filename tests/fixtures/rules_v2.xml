@@ -1,0 +1,40 @@
+<group name="syslog,errors,">
+
+  <!-- 10001: level bumped from 5 to 7 -->
+  <rule id="10001" level="7">
+    <match>error</match>
+    <description>Generic error detected</description>
+    <group>syslog</group>
+  </rule>
+
+  <!-- 10002: REMOVED -->
+
+  <!-- 10003: description + group changed -->
+  <rule id="10003" level="7">
+    <regex>(?i)failed password</regex>
+    <description>Authentication password failure (updated)</description>
+    <group>authentication_failure,authentication,</group>
+  </rule>
+
+  <!-- 10004: NEW rule -->
+  <rule id="10004" level="12">
+    <if_sid>10003</if_sid>
+    <frequency>5</frequency>
+    <timeframe>60</timeframe>
+    <description>Multiple password failures - possible brute force</description>
+    <group>authentication_failures,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <!-- 10005: frequency tightened, noalert removed -->
+  <rule id="10005" level="12">
+    <if_sid>10001</if_sid>
+    <frequency>5</frequency>
+    <timeframe>120</timeframe>
+    <description>Multiple errors in short time</description>
+    <group>syslog,</group>
+  </rule>
+
+</group>

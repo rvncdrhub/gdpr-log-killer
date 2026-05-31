@@ -1,0 +1,29 @@
+<group name="syslog,errors,">
+
+  <rule id="10001" level="5">
+    <match>error</match>
+    <description>Generic error detected</description>
+    <group>syslog</group>
+  </rule>
+
+  <rule id="10002" level="3">
+    <match>warning</match>
+    <description>Warning message</description>
+    <group>syslog</group>
+  </rule>
+
+  <rule id="10003" level="7">
+    <regex>(?i)failed password</regex>
+    <description>Password authentication failure</description>
+    <group>authentication_failure,</group>
+  </rule>
+
+  <rule id="10005" level="12" noalert="1">
+    <if_sid>10001</if_sid>
+    <frequency>8</frequency>
+    <timeframe>120</timeframe>
+    <description>Multiple errors in short time</description>
+    <group>syslog,</group>
+  </rule>
+
+</group>
