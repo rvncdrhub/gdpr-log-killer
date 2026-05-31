@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GDPR Log Killer</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <span class="logo">&#x1F6AB; GDPR Log Killer</span>
+      <span class="tagline">Strip sensitive data from logs before sharing with AI</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- ── Options panel ─────────────────────────────────────── -->
+    <section class="options-panel" id="optionsPanel">
+      <h2>Options</h2>
+
+      <div class="option-group">
+        <label class="toggle">
+          <input type="checkbox" id="opt_ips" checked />
+          <span class="slider"></span>
+          IP Addresses
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="opt_emails" checked />
+          <span class="slider"></span>
+          Email Addresses
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="opt_macs" checked />
+          <span class="slider"></span>
+          MAC Addresses
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="opt_users" checked />
+          <span class="slider"></span>
+          Usernames
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="opt_phones" checked />
+          <span class="slider"></span>
+          Phone Numbers
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="opt_auth" checked />
+          <span class="slider"></span>
+          Auth Tokens
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="opt_url_creds" checked />
+          <span class="slider"></span>
+          URL Credentials
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="opt_uuids" />
+          <span class="slider"></span>
+          UUIDs / Session IDs
+        </label>
+      </div>
+
+      <div class="option-group domains-group">
+        <label for="opt_domains">
+          Internal Domain Suffixes
+          <span class="hint">(one per line, or comma-separated)</span>
+        </label>
+        <textarea
+          id="opt_domains"
+          placeholder="corp.example.com&#10;internal.acme.org"
+          rows="3"
+        ></textarea>
+        <p class="hint">
+          Hostnames ending in these suffixes will be replaced. Leave empty to
+          skip hostname scrubbing.
+        </p>
+      </div>
+
+      <div class="option-group">
+        <label class="toggle">
+          <input type="checkbox" id="opt_hostnames" checked />
+          <span class="slider"></span>
+          Internal Hostnames
+        </label>
+      </div>
+    </section>
+
+    <!-- ── Editor area ───────────────────────────────────────── -->
+    <section class="editor-area">
+      <div class="pane" id="inputPane">
+        <div class="pane-header">
+          <span class="pane-title">Raw Log</span>
+          <div class="pane-actions">
+            <button class="btn-ghost" id="btnPaste" title="Paste from clipboard">Paste</button>
+            <button class="btn-ghost" id="btnClearInput" title="Clear input">Clear</button>
+          </div>
+        </div>
+        <textarea
+          id="inputText"
+          class="log-textarea"
+          placeholder="Paste your log here…"
+          spellcheck="false"
+        ></textarea>
+        <div class="pane-footer">
+          <span class="char-count" id="inputCount">0 chars</span>
+          <button class="btn-primary" id="btnSanitize">
+            Sanitize &#x2192;
+          </button>
+        </div>
+      </div>
+
+      <div class="pane" id="outputPane">
+        <div class="pane-header">
+          <span class="pane-title">Sanitized Output</span>
+          <div class="pane-actions">
+            <button class="btn-ghost" id="btnCopy" title="Copy to clipboard" disabled>Copy</button>
+            <button class="btn-ghost" id="btnDownload" title="Download as .txt" disabled>Download</button>
+          </div>
+        </div>
+        <textarea
+          id="outputText"
+          class="log-textarea"
+          placeholder="Sanitized log will appear here…"
+          readonly
+          spellcheck="false"
+        ></textarea>
+        <div class="pane-footer">
+          <span class="char-count" id="outputCount">0 chars</span>
+          <span id="statsBar" class="stats-bar"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Stats panel ───────────────────────────────────────── -->
+    <section class="stats-panel" id="statsPanel" hidden>
+      <h2>What was replaced</h2>
+      <div id="statsGrid" class="stats-grid"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      All processing happens <strong>locally on this server</strong> — no log
+      data is forwarded to any third party.
+    </p>
+  </footer>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

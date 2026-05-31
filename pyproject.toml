@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gdpr-log-killer"
+version = "0.1.0"
+description = "Strip GDPR-sensitive values from log files before sharing with AI tools"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "flask>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov",
+]
+
+[project.scripts]
+gdpr-log-killer = "gdpr_log_killer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gdpr_log_killer*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
